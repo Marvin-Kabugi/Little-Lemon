@@ -5,6 +5,7 @@ from . import views
 
 urlpatterns = [
     path('menu-items', views.MenuItemsList.as_view(), name='menu-list'),
+    path('menu-items/<int:pk>', views.MenuItemsDetail.as_view(), name='menu-item-detail'),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
