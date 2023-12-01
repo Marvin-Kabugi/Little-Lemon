@@ -7,3 +7,8 @@ class CustomAccessPermission(BasePermission):
         
         # return request.user and request.user.is_superuser
         return request.user and request.user.groups.filter(name='Manager').exists()
+    
+
+class ManagerPermission(BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.groups.filter(name='Manager').exists()

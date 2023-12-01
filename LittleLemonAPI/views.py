@@ -1,13 +1,16 @@
 from django.shortcuts import render
+from django.contrib.auth.models import User, Group
 from rest_framework import  generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from .serializers import CategorySerializer, MenuItemSerializer, CartSerializer, OrderSerializer, OrderItemSerializer
+from .serializers import CategorySerializer, MenuItemSerializer, CartSerializer, OrderSerializer, OrderItemSerializer, UserSerializer, UserGroupSerializer
 from .models import Category, MenuItem, Cart, Order, OrderItem
-from .permissions import CustomAccessPermission
+from .permissions import CustomAccessPermission, ManagerPermission
 # Create your views here.
 
+
+# Class based view for managing listing and creation of Menu Items 
 class MenuItemsList(APIView):
     permission_classes = [CustomAccessPermission]
 
@@ -23,8 +26,9 @@ class MenuItemsList(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 
+
+# Class based view for managing listing, updating and deleting a single Menu Item
 class MenuItemsDetail(APIView):
     permission_classes = [CustomAccessPermission]
 
@@ -61,3 +65,95 @@ class MenuItemsDetail(APIView):
         menu_item = self.get_object(pk)
         menu_item.delete()
         return Response(status=status.HTTP_200_OK)
+    
+
+# Class based view for managing User groups. Creation and Listing of.
+class UserGroupList(APIView):
+    permission_classes = [ManagerPermission]
+
+    def get(self, request, format=None):
+        users = User.objects.filter(groups__name="Manager")
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+    def post(self, request, format=None):
+        '''
+            Payload Format:
+            {
+                "id": <int: id>,
+                "username": <str: username>
+            }
+        '''
+        group = Group.objects.get(name="Manager")
+        serializer = UserGroupSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                user= User.objects.get(username=serializer.validated_data.get('username'))
+            except User.DoesNotExist:
+                return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+            
+            user.groups.add(group)
+            return Response(status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+
+class UserGroupDetail(APIView):
+    permission_classes = [ManagerPermission]
+
+    def delete(self, request, pk, format=None):
+        group = Group.objects.get(name="Manager")
+        
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        user.groups.remove(group)
+        return Response(status=status.HTTP_200_OK)
+    
+
+class DeliveryGroupList(APIView):
+    permission_classes = [ManagerPermission]
+
+    def get(self, request, format=None):
+        users = User.objects.filter(groups__name="Delivery Crew")
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+    def post(self, request, format=None):
+        '''
+            Payload Format:
+            {
+                "id": <int: id>,
+                "username": <str: username>
+            }
+        '''
+        group = Group.objects.get(name="Delivery Crew")
+        serializer = UserGroupSerializer(data=request.data)
+
+        if serializer.is_valid():
+            try:
+                user = User.objects.get(username=serializer.validated_data.get('username'))
+            except User.DoesNotExist:
+                return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+            
+            user.groups.add(group)
+            return Response(status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class DeliveryGroupDetail(APIView):
+    permission_classes = [ManagerPermission]
+
+    def delete(self, request, pk):
+        group = Group.objects.get(name="Delivery Crew")
+        try:
+            user = User.objects.get(pk=pk)
+        except User.DoesNotExist:
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        
+        user.groups.remove(group)
+        return Response(status=status.HTTP_200_OK)
+        
