@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from .serializers import CategorySerializer, MenuItemSerializer, CartSerializer, OrderSerializer, OrderItemSerializer, UserSerializer, UserGroupSerializer
 from .models import Category, MenuItem, Cart, Order, OrderItem
-from .permissions import CustomAccessPermission, ManagerPermission
+from .permissions import CustomAccessPermission, ManagerPermission, CustomerPermission
 # Create your views here.
 
 
@@ -36,16 +36,20 @@ class MenuItemsDetail(APIView):
         try:
             return MenuItem.objects.get(pk=pk)
         except MenuItem.DoesNotExist:
-            return Response({'error': 'Menu item does not exist'},status=status.HTTP_404_NOT_FOUND)
+            return None
 
     def get(self, request, pk, format = None):
         menu_item = self.get_object(pk)
+        if menu_item is None:
+            return Response(status=status.HTTP_404_NOT_FOUND) 
         serializer = MenuItemSerializer(menu_item)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
     def patch(self, request, pk, format = None):
         menu_item = self.get_object(pk)
+        if menu_item is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = MenuItemSerializer(menu_item, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -55,6 +59,8 @@ class MenuItemsDetail(APIView):
 
     def put(self, request, pk, format = None):
         menu_item = self.get_object(pk)
+        if menu_item is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = MenuItemSerializer(menu_item, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -63,6 +69,8 @@ class MenuItemsDetail(APIView):
     
     def delete(self, request, pk, format=None):
         menu_item = self.get_object(pk)
+        if menu_item is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
         menu_item.delete()
         return Response(status=status.HTTP_200_OK)
     
@@ -147,7 +155,7 @@ class DeliveryGroupList(APIView):
 class DeliveryGroupDetail(APIView):
     permission_classes = [ManagerPermission]
 
-    def delete(self, request, pk):
+    def delete(self, request, pk, format=None):
         group = Group.objects.get(name="Delivery Crew")
         try:
             user = User.objects.get(pk=pk)
@@ -157,3 +165,39 @@ class DeliveryGroupDetail(APIView):
         user.groups.remove(group)
         return Response(status=status.HTTP_200_OK)
         
+
+class CartList(APIView):
+    permission_classes = [permissions.IsAuthenticated, CustomerPermission]
+
+    def get(self, request, format=None):
+        username = request.user.username
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        
+        user_menu_items = Cart.objects.filter(user=user)
+        menuitems = [item.menuitem for item in user_menu_items]
+        # print(menuitems)
+        # serializer = CartSerializer(user_menu_items, many=True)
+        serializer = MenuItemSerializer(menuitems, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, format=None):
+        serializer = CartSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print(serializer.errors)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, format=None):
+        username = request.user.username
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        
+        Cart.objects.filter(user=user).delete()
+        return Response({'message': 'Deleted Cart'}, status=status.HTTP_200_OK)

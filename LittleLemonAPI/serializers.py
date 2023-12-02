@@ -42,12 +42,18 @@ class MenuItemSerializer(serializers.ModelSerializer):
         # return super(MenuItemSerializer, self).to_representation(instance)
 
 class CartSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    menuitem = MenuItemSerializer()
+    # user = UserSerializer()
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        # write_only=True,
+        default=serializers.CurrentUserDefault()
+    )
+    menuitem = MenuItemSerializer(read_only=True)
+    menuitem_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = Cart
-        fields = ['id', 'quantity', 'unit_price', 'price', 'user', 'menuitem']
+        fields = ['id', 'quantity', 'unit_price', 'price', 'user', 'menuitem', 'menuitem_id']
 
 
 class OrderSerializer(serializers.ModelSerializer):

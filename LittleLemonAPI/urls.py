@@ -10,6 +10,7 @@ urlpatterns = [
     path('groups/managers/users/<int:pk>', views.UserGroupDetail.as_view(), name='user-individual'),
     path('groups/delivery-crew/users', views.DeliveryGroupList.as_view(), name='crew-delivery-list'),
     path('groups/delivery-crew/users/<int:pk>', views.DeliveryGroupDetail.as_view(), name='crew-individual'),
+    path('cart/menu-items', views.CartList.as_view(), name='cart')
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
