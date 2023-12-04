@@ -1,3 +1,4 @@
+from functools import reduce
 from django.shortcuts import render
 from django.contrib.auth.models import User, Group
 from rest_framework import  generics, permissions, status
@@ -206,7 +207,7 @@ class CartList(APIView):
 
 class OrderList(APIView):
     def get(self, request):
-        orders = OrderItem.objects.filter(order=request.user)
+        orders = Order.objects.filter(user=request.user)
         serializer = OrderSerializer(orders)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -214,4 +215,23 @@ class OrderList(APIView):
     def post(self, request):
         serializer = OrderSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            order = serializer.save()
+            print(order)
+            menu_items = CartList().get(request)
+            print(menu_items)
+            for item in menu_items:
+                cart = Cart.objects.get(user=request.user, menuitem=item)
+                OrderItem.objects.create(
+                    order=order,
+                    menuitem=item,
+                    quantity=cart.quantity,
+                    unit_price=cart.unit_price,
+                    price=cart.price
+                )
+
+            order.total = reduce(lambda x, y: x + y, [order.price for order in OrderItem.objects.filter(order=order)])
+            order.save()
+            CartList().delete(request)
+
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
