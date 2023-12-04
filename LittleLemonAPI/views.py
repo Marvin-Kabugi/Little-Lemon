@@ -201,3 +201,17 @@ class CartList(APIView):
         
         Cart.objects.filter(user=user).delete()
         return Response({'message': 'Deleted Cart'}, status=status.HTTP_200_OK)
+    
+
+
+class OrderList(APIView):
+    def get(self, request):
+        orders = OrderItem.objects.filter(order=request.user)
+        serializer = OrderSerializer(orders)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+    def post(self, request):
+        serializer = OrderSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
