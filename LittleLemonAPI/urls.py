@@ -11,7 +11,8 @@ urlpatterns = [
     path('groups/delivery-crew/users', views.DeliveryGroupList.as_view(), name='crew-delivery-list'),
     path('groups/delivery-crew/users/<int:pk>', views.DeliveryGroupDetail.as_view(), name='crew-individual'),
     path('cart/menu-items', views.CartList.as_view(), name='cart'),
-    path('orders', views.OrderList.as_view(), name='orders-list')
+    path('orders', views.OrderList.as_view(), name='orders-list'),
+    path('orders/<int:pk>', views.OrderDetail.as_view(), name='orders-detail'),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

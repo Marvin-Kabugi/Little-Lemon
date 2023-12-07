@@ -57,21 +57,24 @@ class CartSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    delivery_crew = UserSerializer()
+    user = UserSerializer(read_only=True)
+    user_id = serializers.IntegerField(write_only=True)
+    delivery_crew = UserSerializer(read_only=True)
     order_items = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['id', 'status', 'total', 'date', 'user', 'delivery_crew', 'order_items']
+        fields = ['id', 'status', 'total', 'date', 'user', 'delivery_crew', 'order_items', 'user_id']
 
     def get_order_items(self, obj):
         items = obj.order_items.all()  # Adjust the related name if necessary
         return OrderItemSerializer(items, many=True, read_only=True).data
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    order = OrderSerializer()
-    menuitem = MenuItemSerializer()
+    order = OrderSerializer(write_only=True)
+    menuitem = MenuItemSerializer(read_only=True)
+    menuitem_id = serializers.IntegerField(write_only=True)
+    
     class Meta:
         model = OrderItem
-        fields = ['id', 'quantity', 'unit_price', 'price', 'order', 'menuitem']
+        fields = ['id', 'quantity', 'unit_price', 'price', 'order', 'menuitem', 'menuitem_id']

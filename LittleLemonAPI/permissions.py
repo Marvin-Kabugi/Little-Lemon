@@ -21,3 +21,5 @@ class CustomerPermission(BasePermission):
         delivery_group = Group.objects.get(name='Delivery Crew') 
         check = manager_group in request.user.groups.all() or delivery_group in request.user.groups.all()
         return not check
+    
+

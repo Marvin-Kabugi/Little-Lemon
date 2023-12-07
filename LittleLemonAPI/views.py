@@ -206,9 +206,16 @@ class CartList(APIView):
 
 
 class OrderList(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request):
-        orders = Order.objects.filter(user=request.user)
-        serializer = OrderSerializer(orders)
+        if ManagerPermission().has_permission(request, self):
+            orders = Order.objects.all()
+        else:
+            orders = Order.objects.filter(user=request.user.id)
+        print(orders)
+        print(request.user, ':', request.user.id)
+        serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
@@ -217,13 +224,14 @@ class OrderList(APIView):
         if serializer.is_valid():
             order = serializer.save()
             print(order)
-            menu_items = CartList().get(request)
+            menu_items = CartList().get(request).data
             print(menu_items)
             for item in menu_items:
-                cart = Cart.objects.get(user=request.user, menuitem=item)
+                cart = Cart.objects.get(user=request.user, menuitem=item.get('id'))
+                print('done')
                 OrderItem.objects.create(
                     order=order,
-                    menuitem=item,
+                    menuitem_id=item.get('id'),
                     quantity=cart.quantity,
                     unit_price=cart.unit_price,
                     price=cart.price
@@ -232,6 +240,61 @@ class OrderList(APIView):
             order.total = reduce(lambda x, y: x + y, [order.price for order in OrderItem.objects.filter(order=order)])
             order.save()
             CartList().delete(request)
-
+            return Response(status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class OrderDetail(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            return None
+        
+        
+    def get(self, request, pk, format=None):
+        order = self.get_object(pk)
+        if order is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = OrderSerializer(order)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+    def put(self, request, pk, format=None):
+        order = self.get_object(pk)
+
+        if order is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = OrderSerializer(order, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    
+
+    def patch (self, request, pk, format=None):
+        order = self.get_object(pk)
+
+        if order is None:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = OrderSerializer(order, request=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    
+
+    def delete(self, request, pk, format=None):
+        order = self.get_object(pk)
+        order.delete()
+        return Response(status=status.HTTP_200_OK)
+
+
+
+    
