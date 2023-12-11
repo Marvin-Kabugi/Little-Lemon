@@ -60,15 +60,19 @@ class OrderSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     user_id = serializers.IntegerField(write_only=True)
     delivery_crew = UserSerializer(read_only=True)
+    delivery_crew_id = serializers.IntegerField(write_only=True, allow_null=True, required=False)
     order_items = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['id', 'status', 'total', 'date', 'user', 'delivery_crew', 'order_items', 'user_id']
+        fields = ['id', 'status', 'total', 'date', 'user', 'delivery_crew', 'order_items', 'user_id', 'delivery_crew_id']
 
     def get_order_items(self, obj):
-        items = obj.order_items.all()  # Adjust the related name if necessary
+        items = obj.order_items.all()
         return OrderItemSerializer(items, many=True, read_only=True).data
+    
+
+    def validate
 
 class OrderItemSerializer(serializers.ModelSerializer):
     order = OrderSerializer(write_only=True)

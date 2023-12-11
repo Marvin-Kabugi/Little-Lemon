@@ -23,3 +23,9 @@ class CustomerPermission(BasePermission):
         return not check
     
 
+
+class DeliveryCrewPermission(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.groups.filter(name='Delivery Crew').exists()
+    
+

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from .serializers import CategorySerializer, MenuItemSerializer, CartSerializer, OrderSerializer, OrderItemSerializer, UserSerializer, UserGroupSerializer
 from .models import Category, MenuItem, Cart, Order, OrderItem
-from .permissions import CustomAccessPermission, ManagerPermission, CustomerPermission
+from .permissions import CustomAccessPermission, ManagerPermission, CustomerPermission, DeliveryCrewPermission
 # Create your views here.
 
 
@@ -211,6 +211,8 @@ class OrderList(APIView):
     def get(self, request):
         if ManagerPermission().has_permission(request, self):
             orders = Order.objects.all()
+        elif DeliveryCrewPermission().has_permission(request, self):
+            orders = Order.objects.filter(delivery_crew=request.user.id)
         else:
             orders = Order.objects.filter(user=request.user.id)
         print(orders)
