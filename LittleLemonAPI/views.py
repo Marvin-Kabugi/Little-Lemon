@@ -14,6 +14,8 @@ from .permissions import CustomAccessPermission, ManagerPermission, CustomerPerm
 # Class based view for managing listing and creation of Menu Items 
 class MenuItemsList(APIView):
     permission_classes = [CustomAccessPermission]
+    ordering_fields = ['title', 'price']
+    search_fields = ['title']
 
     def get(self, request, format=None):
         menuitems = MenuItem.objects.all()
@@ -249,7 +251,9 @@ class OrderList(APIView):
 
 class OrderDetail(APIView):
     permission_classes = [permissions.IsAuthenticated]
-
+    ordering_fields = ['status', 'date']
+    search_fields = ['user.username']
+    
     def get_object(self, pk):
         try:
             return Order.objects.get(pk=pk)
