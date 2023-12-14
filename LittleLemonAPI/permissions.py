@@ -22,6 +22,9 @@ class CustomerPermission(BasePermission):
         check = manager_group in request.user.groups.all() or delivery_group in request.user.groups.all()
         return not check
     
+    def has_object_permission(self, request, view, obj):
+        return request.user == obj.user
+    
 
 
 class DeliveryCrewPermission(BasePermission):

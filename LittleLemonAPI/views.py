@@ -262,40 +262,46 @@ class OrderDetail(APIView):
         if order is None:
             return Response(status=status.HTTP_404_NOT_FOUND)
         
-        serializer = OrderSerializer(order)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
+        if CustomerPermission().has_object_permission(request, self, order):
+            serializer = OrderSerializer(order)
+            return Response(serializer.data['order_items'], status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
     def put(self, request, pk, format=None):
-        order = self.get_object(pk)
+        if ManagerPermission().has_permission(request, self): 
+            order = self.get_object(pk)
 
-        if order is None:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        serializer = OrderSerializer(order, data=request.data)
+            if order is None:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            serializer = OrderSerializer(order, data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-    
+            if serializer.is_valid():
+                serializer.save()
+                return Response(status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
     def patch (self, request, pk, format=None):
-        order = self.get_object(pk)
+        if ManagerPermission().has_permission(request, self) or DeliveryCrewPermission().has_permission(request, self):
+            order = self.get_object(pk)
 
-        if order is None:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        serializer = OrderSerializer(order, request=request.data, partial=True)
+            if order is None:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            
+            serializer = OrderSerializer(order, data=request.data, partial=True, context={"request": request})
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-    
+            if serializer.is_valid():
+                serializer.save()
+                return Response(status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
     def delete(self, request, pk, format=None):
-        order = self.get_object(pk)
-        order.delete()
-        return Response(status=status.HTTP_200_OK)
+        if ManagerPermission().has_permission(request, self):
+            order = self.get_object(pk)
+            order.delete()
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
 
 

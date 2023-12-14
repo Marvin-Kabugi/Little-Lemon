@@ -72,7 +72,22 @@ class OrderSerializer(serializers.ModelSerializer):
         return OrderItemSerializer(items, many=True, read_only=True).data
     
 
-    def validate
+    def update(self, instance, validated_data):
+        user = self.context.get('request').user
+        update_fields=['status']
+
+        if user.groups.filter(name='Delivery Crew').exists():
+            for item in validated_data:
+                if item not in update_fields:
+                    raise serializers.ValidationError('Delivery crew can\'t update this field')
+            instance.status = validated_data.get('status', instance.status)
+        else:
+            for item in validated_data:
+                if hasattr(instance, item):
+                    setattr(instance, item, validated_data[item])
+        instance.save()
+
+        return instance
 
 class OrderItemSerializer(serializers.ModelSerializer):
     order = OrderSerializer(write_only=True)
