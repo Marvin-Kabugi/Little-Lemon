@@ -4,6 +4,7 @@ from django.contrib.auth.models import User, Group
 from rest_framework import  generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 
 from .serializers import CategorySerializer, MenuItemSerializer, CartSerializer, OrderSerializer, OrderItemSerializer, UserSerializer, UserGroupSerializer
 from .models import Category, MenuItem, Cart, Order, OrderItem
@@ -13,6 +14,7 @@ from .permissions import CustomAccessPermission, ManagerPermission, CustomerPerm
 
 # Class based view for managing listing and creation of Menu Items 
 class MenuItemsList(APIView):
+    throttle_classes = [UserRateThrottle]
     permission_classes = [CustomAccessPermission]
     ordering_fields = ['title', 'price']
     search_fields = ['title']
@@ -33,6 +35,7 @@ class MenuItemsList(APIView):
 
 # Class based view for managing listing, updating and deleting a single Menu Item
 class MenuItemsDetail(APIView):
+    throttle_classes = [UserRateThrottle]
     permission_classes = [CustomAccessPermission]
 
     def get_object(self, pk):
@@ -80,6 +83,7 @@ class MenuItemsDetail(APIView):
 
 # Class based view for managing User groups. Creation and Listing of.
 class UserGroupList(APIView):
+    throttle_classes = [UserRateThrottle]
     permission_classes = [ManagerPermission]
 
     def get(self, request, format=None):
@@ -110,6 +114,7 @@ class UserGroupList(APIView):
         
 
 class UserGroupDetail(APIView):
+    throttle_classes = [UserRateThrottle]
     permission_classes = [ManagerPermission]
 
     def delete(self, request, pk, format=None):
@@ -170,6 +175,7 @@ class DeliveryGroupDetail(APIView):
         
 
 class CartList(APIView):
+    throttle_classes = [UserRateThrottle]
     permission_classes = [permissions.IsAuthenticated, CustomerPermission]
 
     def get(self, request, format=None):
@@ -208,6 +214,7 @@ class CartList(APIView):
 
 
 class OrderList(APIView):
+    throttle_classes = [UserRateThrottle]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -250,10 +257,11 @@ class OrderList(APIView):
     
 
 class OrderDetail(APIView):
+    throttle_classes = [UserRateThrottle]
     permission_classes = [permissions.IsAuthenticated]
     ordering_fields = ['status', 'date']
     search_fields = ['user.username']
-    
+
     def get_object(self, pk):
         try:
             return Order.objects.get(pk=pk)
@@ -306,7 +314,3 @@ class OrderDetail(APIView):
             order.delete()
             return Response(status=status.HTTP_200_OK)
         return Response(status=status.HTTP_403_FORBIDDEN)
-
-
-
-    
