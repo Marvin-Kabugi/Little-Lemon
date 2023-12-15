@@ -9,7 +9,6 @@ from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from .serializers import CategorySerializer, MenuItemSerializer, CartSerializer, OrderSerializer, OrderItemSerializer, UserSerializer, UserGroupSerializer
 from .models import Category, MenuItem, Cart, Order, OrderItem
 from .permissions import CustomAccessPermission, ManagerPermission, CustomerPermission, DeliveryCrewPermission
-# Create your views here.
 
 
 # Class based view for managing listing and creation of Menu Items 
@@ -224,8 +223,6 @@ class OrderList(APIView):
             orders = Order.objects.filter(delivery_crew=request.user.id)
         else:
             orders = Order.objects.filter(user=request.user.id)
-        print(orders)
-        print(request.user, ':', request.user.id)
         serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -234,12 +231,9 @@ class OrderList(APIView):
         serializer = OrderSerializer(data=request.data)
         if serializer.is_valid():
             order = serializer.save()
-            print(order)
             menu_items = CartList().get(request).data
-            print(menu_items)
             for item in menu_items:
                 cart = Cart.objects.get(user=request.user, menuitem=item.get('id'))
-                print('done')
                 OrderItem.objects.create(
                     order=order,
                     menuitem_id=item.get('id'),
